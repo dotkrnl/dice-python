@@ -78,7 +78,7 @@ class NodeTransformer(ast.NodeTransformer): # child class of ast.NodeTransformer
                         for args in argsNode:
                             if (isinstance(args, ast.List)) and (isinstance(args.ctx, ast.Load)):
                                 for argument in args.elts:
-                                    if ((isinstance(argument, ast.Constant)) and (True == argument.value or False == argument.value)):
+                                    if ((isinstance(argument, ast.NameConstant)) and (True == argument.value or False == argument.value)):
                                         isTrueOrFalseConstants = True
                     
                     if isTrueOrFalseConstants:
@@ -87,10 +87,10 @@ class NodeTransformer(ast.NodeTransformer): # child class of ast.NodeTransformer
                             if ((isinstance(keyword, ast.keyword)) and ("weights" == keyword.arg)):
                                 if ((isinstance(keyword.value, ast.List)) and (isinstance(keyword.value.ctx, ast.Load))):
                                     for element in keyword.value.elts:
-                                        if isinstance(element, ast.Constant) and isinstance(element.value, numbers.Integral):
+                                        if isinstance(element, ast.Num) and isinstance(element.n, numbers.Integral):
                                             # check to see if weight values are unsigned ints
-                                            if element.value > 0:
-                                                values.append(element.value)
+                                            if element.n > 0:
+                                                values.append(element.n)
         
             # divide by 10 to get probabilities
             for i in range(len(values)):
