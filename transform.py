@@ -7,6 +7,7 @@ import sys # for routing Dice output to Python program
 
 varsToWeights = {} # dictionary where keys are variables and values are that variables' associated weights
 
+# given a dictionary of variable to weight mappings, return the translated Dice code corresponding to a variable declaration
 def translateVarsAndWeights(mapping):
     result = []
     for var in mapping:
@@ -16,7 +17,7 @@ def translateVarsAndWeights(mapping):
         result.append("let " + var + " = flip " + str(flipWeight) + " in ")
     return result
 
-
+# go through Python return statement text, parse the logical operators and change them to the Dice equivalent notation ||, &&, !
 def translateReturn(returnStatement):
     result = ""
 
@@ -40,8 +41,6 @@ def translateReturn(returnStatement):
     
     return result
 
-# todo: have to visit function definition first - then inside that visit the assign node, 
-# otherwise it skips the Assign node since the Assign node is within the body of the function definition node
 class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeTransformer
 
     def visit_FunctionDef(self, functionDefNode):
@@ -50,7 +49,7 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeTransformer
             values = [] # holds the value for each of the variable's weights in the vars list
 
             if isinstance(bodyNode, ast.Assign):
-                # for every target (vars that are being assigned), if that target is a Name, and that Name also is a Store (and not a Load),
+                # for every target (vars that are being assigned), if that target is a Name, and that Name also is a Store (we don't want a Load),
                 # then we want to record that target so we can use it in our transformation to Dice code
                 for target in bodyNode.targets:
                     if isinstance(target, ast.Name):
@@ -138,21 +137,20 @@ def dice(func):
         with open("translated.dice", "w") as file:
             file.write(diceCode)
         
-        # now that we can run that translated.dice code succesfully in Dice, we need to redirect its output back to Python
-        # note - this hasn't been tested yet - can't get Dice correctly installed on my virtual machine so far
+        # now that we can have the translated Python code in translated.dice, we need to run translated.dice using the Dice executable and redirect its output back to Python
         resultExecuted = subprocess.run(["dice", "translated.dice"], capture_output=True)
         diceResultString = str(resultExecuted.stdout, "utf-8")
+        # diceResultString is of the form:
+        # =============[Joint Distribution]===============
+        # Value     Probability
+        # true      0.5616
+        # false     0.4384
+
         # split stdout string to find true and false values
         splitTrue = diceResultString.split("true", 1)[1]
         splitFalse = splitTrue.split("false", 1)
         trueVal = float(splitFalse[0])
         falseVal = float(splitFalse[1])
-
-        """ sampleString = "Value Probability true 0.348837 false 0.651163" # just for testing right now since subprocess stuff I can't test as of now
-        splitTrue = sampleString.split("true", 1)[1]
-        splitFalse = splitTrue.split("false", 1)
-        trueVal = float(splitFalse[0])
-        falseVal = float(splitFalse[1]) """
 
         # add mappings to the diceResult dictionary to return to the user
         diceResult = {} # dictionary that contains the final evaluated output that was executed in Dice
@@ -162,6 +160,7 @@ def dice(func):
 
     return wrapper
 
+# note - the 2 comments below is just conceptually saying how decorators work
 # var = decorator(function)
 # evaluate = dice(evaluate)
 @dice
