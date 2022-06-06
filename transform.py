@@ -92,13 +92,13 @@ class NodeTransformer(ast.NodeTransformer): # child class of ast.NodeTransformer
                                             if element.n > 0:
                                                 values.append(element.n)
         
-            # divide by 10 to get probabilities
-            for i in range(len(values)):
-                values[i] /= 10
+                # divide by 10 to get probabilities
+                for i in range(len(values)):
+                    values[i] /= 10
 
-            # add (var, [weights]) to dict as a key, value pair
-            for var in vars:
-                varsToWeights[var] = values
+                # add (var, [weights]) to dict as a key, value pair
+                for var in vars:
+                    varsToWeights[var] = values
     
 
 
