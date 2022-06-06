@@ -41,7 +41,7 @@ def translateReturn(returnStatement):
     
     return result
 
-class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeTransformer
+class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
     def visit_FunctionDef(self, functionDefNode):
         for bodyNode in functionDefNode.body:
