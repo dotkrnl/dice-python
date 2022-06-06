@@ -42,7 +42,7 @@ def translateReturn(returnStatement):
 
 # todo: have to visit function definition first - then inside that visit the assign node, 
 # otherwise it skips the Assign node since the Assign node is within the body of the function definition node
-class NodeTransformer(ast.NodeTransformer): # child class of ast.NodeTransformer
+class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeTransformer
 
     def visit_FunctionDef(self, functionDefNode):
         for bodyNode in functionDefNode.body:
@@ -111,7 +111,7 @@ def dice(func):
         #print(ast.dump(tree, indent=4))
 
         # get variables and their corresponding weights from the AST
-        NodeTransformer().visit(tree)
+        NodeVisitor().visit(tree)
         print(varsToWeights)
 
         # transform mapping of variables and their corresponding weights to Dice equivalent, put each local var as element in array
