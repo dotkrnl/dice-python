@@ -5,17 +5,8 @@ import numbers # to see if weight values are integers
 import subprocess # for routing Dice output to Python program
 import sys # for routing Dice output to Python program
 
-varsToWeights = {} # dictionary where keys are variables and values are that variables' associated weights
-
-# given a dictionary of variable to weight mappings, return the translated Dice code corresponding to a variable declaration
-def translateVarsAndWeights(mapping):
-    result = []
-    for var in mapping:
-        weights = mapping[var]
-        # only need one weight for Dice "flip", just get the first one
-        flipWeight = weights[0]
-        result.append("let " + var + " = flip " + str(flipWeight) + " in ")
-    return result
+global totalDice
+totalDice = ""
 
 # go through Python return statement text, parse the logical operators and change them to the Dice equivalent notation ||, &&, !
 def translateReturn(returnStatement):
@@ -39,7 +30,8 @@ def translateReturn(returnStatement):
             else:
                 result += textSegment
     
-    return result
+    global totalDice
+    totalDice += result
 
 class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
@@ -85,21 +77,12 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
                         for keyword in keywordsNode:
                             if ((isinstance(keyword, ast.keyword)) and ("weights" == keyword.arg)):
                                 if ((isinstance(keyword.value, ast.List)) and (isinstance(keyword.value.ctx, ast.Load))):
-                                    for element in keyword.value.elts:
-                                        if isinstance(element, ast.Num) and isinstance(element.n, numbers.Integral):
-                                            # check to see if weight values are unsigned ints
-                                            if element.n > 0:
-                                                values.append(element.n)
-        
-                # divide by 10 to get probabilities
-                for i in range(len(values)):
-                    values[i] /= 10
-
-                # add (var, [weights]) to dict as a key, value pair
-                for var in vars:
-                    varsToWeights[var] = values
-    
-
+                                    weight = keyword.value.elts[0].n
+                                    weight /= 10 # to convert to probability
+                                    
+                                    for var in vars:
+                                        global totalDice
+                                        totalDice += "let " + var + " = flip " + str(weight) + " in "
 
 def dice(func):
     def wrapper():
@@ -111,31 +94,16 @@ def dice(func):
 
         # get variables and their corresponding weights from the AST
         NodeVisitor().visit(tree)
-        print(varsToWeights)
-
-        # transform mapping of variables and their corresponding weights to Dice equivalent, put each local var as element in array
-        diceLocalVars = translateVarsAndWeights(varsToWeights)
-        print(diceLocalVars)
-
-        # combine elements of local var array together into one string
-        diceVarString = ""
-        for localVar in diceLocalVars:
-            diceVarString += localVar
-        print(diceVarString)
+        print(totalDice)
 
         # parse and transform return expression (if there is any) to Dice equivalent
         returnStatement = functionSourceCode.split("return", 1)[1]
-        diceReturnExpression = translateReturn(returnStatement)
-        print(diceReturnExpression)
-
-        # We have translated Dice code of mapping of vars to weights and translated Dice code for return statement
-        # Now, just combine them together
-        diceCode = diceVarString + diceReturnExpression
-        print(diceCode)
+        translateReturn(returnStatement)
+        print(totalDice)
 
         # now have converted Dice code in one string - put it into a new Dice file "translated.dice"
         with open("translated.dice", "w") as file:
-            file.write(diceCode)
+            file.write(totalDice)
         
         # now that we can have the translated Python code in translated.dice, we need to run translated.dice using the Dice executable and redirect its output back to Python
         resultExecuted = subprocess.run(["dice", "translated.dice"], capture_output=True)
