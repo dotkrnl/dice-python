@@ -227,7 +227,7 @@ def dice(func):
 
         # get variables and their corresponding weights from the AST
         NodeVisitor().visit(tree)
-        print(totalDice)
+        #print(totalDice)
 
         # now have converted Dice code in one string - put it into a new Dice file "translated.dice"
         with open("translated.dice", "w") as file:
@@ -270,14 +270,14 @@ def dice(func):
 # evaluate = dice(evaluate)
 @dice
 def evaluate():
-    ''' # example 1: testing random.choices assignments
+     # example 1: testing random.choices assignments
     a = random.choices([True, False], weights=[3, 7])
     b = random.choices([True, False], weights=[6, 4])
     c = random.choices([True, False], weights=[1, 9])
     d = random.choices([True, False], weights=[8, 2])
     e = random.choices([True, False], weights=[4, 6])
     return ((a or b or not c) and (b or c or d or not e) and (not b or not d or e) and (not a or not b))
-    '''
+    
 
     ''' # example 2: testing basic if/else functionality
     b = random.choices([True, False], weights=[3, 7])
@@ -304,7 +304,7 @@ def evaluate():
     if result:
         return c
     return result
-    '''    
+    '''
 
     ''' # example 4: testing nested if's
     a = random.choices([True, False], weights=[2, 8])
@@ -340,7 +340,7 @@ def evaluate():
     return a
     '''
 
-     # example 6: testing different ordering of example 5
+    ''' # example 6: testing different ordering of example 5
     a = random.choices([True, False], weights=[2,8])
     b = random.choices([True, False], weights=[5, 5])
     c = random.choices([True, False], weights=[7, 3])
@@ -355,6 +355,7 @@ def evaluate():
     else:
         a = random.choices([True, False], weights=[1, 9])
     return a
+    '''
     
 
 def main():
