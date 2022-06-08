@@ -341,7 +341,7 @@ def evaluate():
     '''
 
     ''' # example 6: testing different ordering of example 5
-    a = random.choices([True, False], weights=[2,8])
+    a = random.choices([True, False], weights=[2, 8])
     b = random.choices([True, False], weights=[5, 5])
     c = random.choices([True, False], weights=[7, 3])
     if c:
