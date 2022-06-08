@@ -1,1 +1,1 @@
-let a = flip 0.4 in let b = flip 0.3 in if a then let c = flip 0.2 in c else if b then let c = flip 0.1 in c else let c = flip 0.3 in let result = a && b && c in if result then c else result 
+let a = flip 0.2 in let b = flip 0.5 in let c = flip 0.7 in if c then if b then if a then a else b else c else a 

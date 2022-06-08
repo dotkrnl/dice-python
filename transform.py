@@ -4,6 +4,7 @@ import ast # python's abstract syntax tree library - used to parse function sour
 import numbers # to see if weight values are integers
 import subprocess # for routing Dice output to Python program
 import sys # for routing Dice output to Python program
+import time # for timing
 
 global totalDice
 totalDice = ""
@@ -163,9 +164,9 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
                 lastStatementInIf = True
             super().visit(node)
 
-        totalDice += "else "
         for node in restOfIf:
             #print(node)
+            totalDice += "else "
             super().visit(node)
 
     def visit_Return(self, returnNode):
@@ -194,7 +195,12 @@ def dice(func):
             file.write(totalDice)
         
         # now that we can have the translated Python code in translated.dice, we need to run translated.dice using the Dice executable and redirect its output back to Python
+        startTime = time.time()
         resultExecuted = subprocess.run(["dice", "translated.dice"], capture_output=True)
+        endTime = time.time()
+        timeDifference = endTime - startTime
+
+
         diceErrorString = str(resultExecuted.stderr, "utf-8")
         print(diceErrorString)
 
@@ -215,6 +221,7 @@ def dice(func):
         diceResult = {} # dictionary that contains the final evaluated output that was executed in Dice
         diceResult[True] = trueVal
         diceResult[False] = falseVal
+        diceResult["Time"] = timeDifference
         return diceResult
 
     return wrapper
@@ -245,8 +252,7 @@ def evaluate():
     return result
     '''
 
-     # example 3: testing basic if/elif/else functionality
-
+    ''' # example 3: testing basic if/elif/else functionality
     a = random.choices([True, False], weights=[4, 6])
     b = random.choices([True, False], weights=[3, 7])
     if a:
@@ -259,6 +265,58 @@ def evaluate():
     if result:
         return c
     return result
+    '''    
+
+    ''' # example 4: testing nested if's
+    a = random.choices([True, False], weights=[2, 8])
+    b = random.choices([True, False], weights=[5, 5])
+    c = random.choices([True, False], weights=[7, 3])
+    if a:
+        if b:
+            if c:
+                return a
+            else:
+                return b
+        else:
+            return c
+    else:
+        a = True
+    return a
+    '''
+
+    ''' # example 5: testing different ordering of example 4
+    a = random.choices([True, False], weights=[2, 8])
+    b = random.choices([True, False], weights=[5, 5])
+    c = random.choices([True, False], weights=[7, 3])
+    if b:
+        if c:
+            if a:
+                return a
+            else:
+                return b
+        else:
+            return c
+    else:
+        a = True
+    return a
+    '''
+
+     # example 6: testing different ordering of example 5
+    a = random.choices([True, False], weights=[2,8])
+    b = random.choices([True, False], weights=[5, 5])
+    c = random.choices([True, False], weights=[7, 3])
+    if c:
+        if b:
+            if a:
+                return a
+            else:
+                return b
+        else:
+            return c
+    else:
+        a = True
+    return a
+    
 
 def main():
     result = evaluate()
