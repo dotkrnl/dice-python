@@ -28,23 +28,23 @@ def translateBooleanExpression(textWhitespace):
                 diceBooleanExp += "!"
             elif ("(not" == textSegment): # this happens if you start an expression with an open parentheses and have a "not" right after that
                 diceBooleanExp += "(!"
+            elif ("True" == textSegment):
+                diceBooleanExp += "true"
+            elif ("False" == textSegment):
+                diceBooleanExp += "false"
+            elif (">=" == textSegment):
+                diceBooleanExp += " >= "
+            elif ("<=" == textSegment):
+                diceBooleanExp += " <= "
+            elif ("!=" == textSegment):
+                diceBooleanExp += " != "
+            elif ("==" == textSegment):
+                diceBooleanExp += " == "
             else:
                 diceBooleanExp += textSegment
 
     return diceBooleanExp
                 
-
-# go through Python return statement text, parse the logical operators and change them to the Dice equivalent notation ||, &&, !
-def translateReturn(returnStatement):
-    result = ""
-
-    # split by whitespace: "or" and "and" Python operators are always separated by whitespace
-    text = returnStatement.split(" ")
-    # print(text)
-
-    translateBooleanExpression(text)
-
-
 def isAssignRandomChoice(assignNode):
     global totalDice
     global lastStatementInIf
@@ -104,10 +104,29 @@ def isAssignRandomChoice(assignNode):
 
 def isAssignBooleanOperation(assignNode):
     global totalDice
+    global lastStatementInIf
 
-    if isinstance(assignNode, ast.BoolOp):
-        diceExpr = translateBooleanExpression(ast.unparse(assignNode))
-        totalDice += diceExpr + " "
+    vars = []
+
+    for target in assignNode.targets:
+        if isinstance(target, ast.Name):
+            if isinstance(target.ctx, ast.Store):
+                vars.append(target.id)
+
+    valueNode = assignNode.value
+    if isinstance(valueNode, ast.BoolOp):
+        # don't need "<var =" part of assignment, just need the boolean expression
+        booleanExpr = ast.unparse(assignNode).split(vars[-1] + " = ")[1]
+        booleanExprStr = translateBooleanExpression(booleanExpr)
+        
+        for var in vars:
+            totalDice += "let " + var + " = " + booleanExprStr + " in "
+
+        if lastStatementInIf:
+            lastVar = vars[-1]
+            totalDice += lastVar + " "
+            lastStatementInIf = False
+
         return True
     return False
 
@@ -123,7 +142,7 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
         if isAssignRandomChoice(assignNode):
             return
-        if isAssignBooleanOperation(assignNode):
+        elif isAssignBooleanOperation(assignNode):
             return
 
     def visit_If(self, ifNode):
@@ -146,7 +165,7 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
         totalDice += "else "
         for node in restOfIf:
-            print(node)
+            #print(node)
             super().visit(node)
 
     def visit_Return(self, returnNode):
@@ -205,25 +224,26 @@ def dice(func):
 # evaluate = dice(evaluate)
 @dice
 def evaluate():
-    
+    '''
     a = random.choices([True, False], weights=[3, 7])
     b = random.choices([True, False], weights=[6, 4])
     c = random.choices([True, False], weights=[1, 9])
     d = random.choices([True, False], weights=[8, 2])
     e = random.choices([True, False], weights=[4, 6])
     return ((a or b or not c) and (b or c or d or not e) and (not b or not d or e) and (not a or not b))
-
-
     '''
+
+    
     b = random.choices([True, False], weights=[3, 7])
     if b:
         a = random.choices([True, False], weights=[3, 7])
     else:
         a = random.choices([True, False], weights=[2, 8])
-    result = b or (a == True)
+    result = b or a
     if result:
         return b
-    return None'''
+    return result
+    
 
 def main():
     result = evaluate()
