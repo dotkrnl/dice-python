@@ -11,6 +11,29 @@ totalDice = ""
 global lastStatementInIf
 lastStatementInIf = False
 
+def translateBooleanExpression(textWhitespace):
+    diceBooleanExp = ""
+
+    # split by whitespace: "or" and "and" Python operators are always separated by whitespace
+    text = textWhitespace.split(" ")
+
+    # note - still keep any newlines (\n) in result for now, don't think it matters in Dice
+    for textSegment in text:
+        if "" != textSegment:
+            if "or" == textSegment:
+                diceBooleanExp += " || "
+            elif "and" == textSegment:
+                diceBooleanExp += " && "
+            elif ("not" == textSegment):
+                diceBooleanExp += "!"
+            elif ("(not" == textSegment): # this happens if you start an expression with an open parentheses and have a "not" right after that
+                diceBooleanExp += "(!"
+            else:
+                diceBooleanExp += textSegment
+
+    return diceBooleanExp
+                
+
 # go through Python return statement text, parse the logical operators and change them to the Dice equivalent notation ||, &&, !
 def translateReturn(returnStatement):
     result = ""
@@ -19,22 +42,8 @@ def translateReturn(returnStatement):
     text = returnStatement.split(" ")
     # print(text)
 
-    # note - still keep any newlines (\n) in result for now, don't think it matters in Dice
-    for textSegment in text:
-        if "" != textSegment:
-            if "or" == textSegment:
-                result += " || "
-            elif "and" == textSegment:
-                result += " && "
-            elif ("not" == textSegment):
-                result += "!"
-            elif ("(not" == textSegment): # this happens if you start an expression with an open parentheses and have a "not" right after that
-                result += "(!"
-            else:
-                result += textSegment
-    
-    global totalDice
-    totalDice += result + " "
+    translateBooleanExpression(text)
+
 
 def isAssignRandomChoice(assignNode):
     global totalDice
@@ -93,6 +102,14 @@ def isAssignRandomChoice(assignNode):
             return True
         return False
 
+def isAssignBooleanOperation(assignNode):
+    global totalDice
+
+    if isinstance(assignNode, ast.BoolOp):
+        diceExpr = translateBooleanExpression(ast.unparse(assignNode))
+        totalDice += diceExpr + " "
+        return True
+    return False
 
 class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
@@ -105,6 +122,8 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
         global lastStatementInIf
 
         if isAssignRandomChoice(assignNode):
+            return
+        if isAssignBooleanOperation(assignNode):
             return
 
     def visit_If(self, ifNode):
@@ -131,11 +150,13 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
             super().visit(node)
 
     def visit_Return(self, returnNode):
+        global totalDice
+
         returnValue = returnNode.value
         returnValueStr = ast.unparse(returnValue)
+        diceResultExpr = translateBooleanExpression(returnValueStr)
 
-        # parse and transform return expression (if there is any) to Dice equivalent
-        translateReturn(returnValueStr)
+        totalDice += diceResultExpr + " "
 
 def dice(func):
     def wrapper():
