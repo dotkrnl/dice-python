@@ -46,7 +46,7 @@ docker run -d sholtzen/dice tail -f /dev/null
 
 docker ps --all
 
-docker exec -it <nameOfContainer> bash
+docker exec -it <name of container> bash
 ```
 Update Dice container's Debian distribution so we can use Python 3.9
 ```
