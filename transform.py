@@ -224,7 +224,7 @@ def dice(func):
 # evaluate = dice(evaluate)
 @dice
 def evaluate():
-    '''
+    ''' # example 1: testing random.choices assignments
     a = random.choices([True, False], weights=[3, 7])
     b = random.choices([True, False], weights=[6, 4])
     c = random.choices([True, False], weights=[1, 9])
@@ -233,7 +233,7 @@ def evaluate():
     return ((a or b or not c) and (b or c or d or not e) and (not b or not d or e) and (not a or not b))
     '''
 
-    
+    ''' # example 2: testing basic if/else functionality
     b = random.choices([True, False], weights=[3, 7])
     if b:
         a = random.choices([True, False], weights=[3, 7])
@@ -243,7 +243,22 @@ def evaluate():
     if result:
         return b
     return result
-    
+    '''
+
+     # example 3: testing basic if/elif/else functionality
+
+    a = random.choices([True, False], weights=[4, 6])
+    b = random.choices([True, False], weights=[3, 7])
+    if a:
+        c = random.choices([True, False], weights=[2, 8])
+    elif b:
+        c = random.choices([True, False], weights=[1, 9])
+    else:
+        c = random.choices([True, False], weights=[3, 7])
+    result = a and b and c
+    if result:
+        return c
+    return result
 
 def main():
     result = evaluate()
