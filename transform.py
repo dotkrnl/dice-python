@@ -8,6 +8,9 @@ import sys # for routing Dice output to Python program
 global totalDice
 totalDice = ""
 
+global lastStatementInIf
+lastStatementInIf = False
+
 # go through Python return statement text, parse the logical operators and change them to the Dice equivalent notation ||, &&, !
 def translateReturn(returnStatement):
     result = ""
@@ -31,7 +34,7 @@ def translateReturn(returnStatement):
                 result += textSegment
     
     global totalDice
-    totalDice += result
+    totalDice += result + " "
 
 class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
@@ -40,8 +43,10 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
             super().visit(bodyNode)
 
     def visit_Assign(self, assignNode):
+        global totalDice
+        global lastStatementInIf
+
         vars = [] # holds variables that we need to define in Dice
-        values = [] # holds the value for each of the variable's weights in the vars list
 
         # for every target (vars that are being assigned), if that target is a Name, and that Name also is a Store (we don't want a Load), 
         # then we want to record that target so we can use it in our transformation to Dice code
@@ -85,13 +90,35 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
                             global totalDice
                             totalDice += "let " + var + " = flip " + str(weight) + " in "
 
+                        # if lastStatementInIf is true, need to finish "in" portion
+                        if lastStatementInIf:
+                            lastVar = vars[-1]
+                            totalDice += lastVar + " "
+                            lastStatementInIf = False
+
+
     def visit_If(self, ifNode):
+        global totalDice
+        global lastStatementInIf
+
         ifCondition = ifNode.test
         ifBody = ifNode.body
         restOfIf = ifNode.orelse
 
         ifConditionStr = ast.unparse(ifCondition)
-        print("ifCondition: ", ifConditionStr)
+        totalDice += "if " + ifConditionStr + " then "
+        #print("ifCondition: ", ifConditionStr)
+
+        ifBodyListLength = len(ifBody) - 1
+        for node in ifBody:
+            if ifBody.index(node) == ifBodyListLength:
+                lastStatementInIf = True
+            super().visit(node)
+
+        totalDice += "else "
+        for node in restOfIf:
+            print(node)
+            super().visit(node)
 
     def visit_Return(self, returnNode):
         returnValue = returnNode.value
@@ -118,6 +145,9 @@ def dice(func):
         
         # now that we can have the translated Python code in translated.dice, we need to run translated.dice using the Dice executable and redirect its output back to Python
         resultExecuted = subprocess.run(["dice", "translated.dice"], capture_output=True)
+        diceErrorString = str(resultExecuted.stderr, "utf-8")
+        print(diceErrorString)
+
         diceResultString = str(resultExecuted.stdout, "utf-8")
         # diceResultString is of the form:
         # =============[Joint Distribution]===============
@@ -144,12 +174,25 @@ def dice(func):
 # evaluate = dice(evaluate)
 @dice
 def evaluate():
+    
     a = random.choices([True, False], weights=[3, 7])
     b = random.choices([True, False], weights=[6, 4])
     c = random.choices([True, False], weights=[1, 9])
     d = random.choices([True, False], weights=[8, 2])
     e = random.choices([True, False], weights=[4, 6])
     return ((a or b or not c) and (b or c or d or not e) and (not b or not d or e) and (not a or not b))
+
+
+    '''
+    b = random.choices([True, False], weights=[3, 7])
+    if b:
+        a = random.choices([True, False], weights=[3, 7])
+    else:
+        a = random.choices([True, False], weights=[2, 8])
+    result = b or (a == True)
+    if result:
+        return b
+    return None'''
 
 def main():
     result = evaluate()
