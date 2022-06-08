@@ -37,65 +37,61 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
     def visit_FunctionDef(self, functionDefNode):
         for bodyNode in functionDefNode.body:
-            vars = [] # holds variables that we need to define in Dice
-            values = [] # holds the value for each of the variable's weights in the vars list
+            super().visit(bodyNode)
 
-            if isinstance(bodyNode, ast.Assign):
-                # for every target (vars that are being assigned), if that target is a Name, and that Name also is a Store (we don't want a Load),
-                # then we want to record that target so we can use it in our transformation to Dice code
-                for target in bodyNode.targets:
-                    if isinstance(target, ast.Name):
-                        if isinstance(target.ctx, ast.Store):
-                            vars.append(target.id)
-                
-                # for the one value node, record that value so we can use it in our transformation to Dice code
-                valueNode = bodyNode.value
-                if isinstance(valueNode, ast.Call):
-                    funcNode = valueNode.func
-                    argsNode = valueNode.args
-                    keywordsNode = valueNode.keywords
+    def visit_Assign(self, assignNode):
+        vars = [] # holds variables that we need to define in Dice
+        values = [] # holds the value for each of the variable's weights in the vars list
 
-                    isRandomChoices = False
-                    # check if the funcNode is "random.choices"
-                    if (isinstance(funcNode, ast.Attribute)) and ("choices" == funcNode.attr):
-                        if isinstance(funcNode.value, ast.Name):
-                            nameNode = funcNode.value
-                            if ("random" == nameNode.id) and (isinstance(nameNode.ctx, ast.Load)):
-                                isRandomChoices = True
-                    
-                    isTrueOrFalseConstants = False
-                    if isRandomChoices:
-                        # check if arguments are True or False constants
-                        for args in argsNode:
-                            if (isinstance(args, ast.List)) and (isinstance(args.ctx, ast.Load)):
-                                for argument in args.elts:
-                                    if ((isinstance(argument, ast.NameConstant)) and (True == argument.value or False == argument.value)):
-                                        isTrueOrFalseConstants = True
-                    
-                    if isTrueOrFalseConstants:
-                        # check if weights are valid
-                        for keyword in keywordsNode:
-                            if ((isinstance(keyword, ast.keyword)) and ("weights" == keyword.arg)):
-                                if ((isinstance(keyword.value, ast.List)) and (isinstance(keyword.value.ctx, ast.Load))):
-                                    weight = keyword.value.elts[0].n
-                                    weight /= 10 # to convert to probability
-                                    
-                                    for var in vars:
-                                        global totalDice
-                                        totalDice += "let " + var + " = flip " + str(weight) + " in "
+        # for every target (vars that are being assigned), if that target is a Name, and that Name also is a Store (we don't want a Load), 
+        # then we want to record that target so we can use it in our transformation to Dice code
+        for target in assignNode.targets:
+            if isinstance(target, ast.Name):
+                if isinstance(target.ctx, ast.Store):
+                    vars.append(target.id)
 
-            elif isinstance(bodyNode, ast.If):
-                super().visit(bodyNode)
-            elif isinstance(bodyNode, ast.Return):
-                super().visit(bodyNode)
+        # for the one value node, record that value so we can use it in our transformation to Dice code
+        valueNode = assignNode.value
+        if isinstance(valueNode, ast.Call):
+            funcNode = valueNode.func
+            argsNode = valueNode.args
+            keywordsNode = valueNode.keywords
 
-    #def visit_If(self, ifNode):
-        #ifCondition = ifNode.test
-        #ifBody = ifNode.body
-        #restOfIf = ifNode.orelse
+            isRandomChoices = False
+            # check if the funcNode is "random.choices"
+            if (isinstance(funcNode, ast.Attribute)) and ("choices" == funcNode.attr):
+                if isinstance(funcNode.value, ast.Name):
+                    nameNode = funcNode.value
+                    if ("random" == nameNode.id) and (isinstance(nameNode.ctx, ast.Load)):
+                        isRandomChoices = True
+            
+            isTrueOrFalseConstants = False
+            if isRandomChoices:
+                # check if arguments are True or False constants
+                for args in argsNode:
+                    if (isinstance(args, ast.List)) and (isinstance(args.ctx, ast.Load)):
+                        for argument in args.elts:
+                            if ((isinstance(argument, ast.NameConstant)) and (True == argument.value or False == argument.value)):
+                                isTrueOrFalseConstants = True
 
-        #ifConditionStr = ast.unparse(ifCondition)
-        #print("ifCondition: ", ifConditionStr)
+            if isTrueOrFalseConstants:
+                # check if weights are valid
+                for keyword in keywordsNode:
+                    if ((isinstance(keyword.value, ast.List)) and (isinstance(keyword.value.ctx, ast.Load))):
+                        weight = keyword.value.elts[0].n
+                        weight /= 10 # to convert to probability
+
+                        for var in vars:
+                            global totalDice
+                            totalDice += "let " + var + " = flip " + str(weight) + " in "
+
+    def visit_If(self, ifNode):
+        ifCondition = ifNode.test
+        ifBody = ifNode.body
+        restOfIf = ifNode.orelse
+
+        ifConditionStr = ast.unparse(ifCondition)
+        print("ifCondition: ", ifConditionStr)
 
     def visit_Return(self, returnNode):
         returnValue = returnNode.value
