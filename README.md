@@ -1,7 +1,7 @@
 # dice-python
 dice-python is a program used to take Python code and output that equivalent code in Dice, a probabilistic programming language.
 
-## Environment Setup
+## Linux Environment Setup
 Setup Docker:
 ```
 sudo apt-get remove docker docker-engine docker.io containerd runc
