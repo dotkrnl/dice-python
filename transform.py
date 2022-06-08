@@ -84,6 +84,26 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
                                         global totalDice
                                         totalDice += "let " + var + " = flip " + str(weight) + " in "
 
+            elif isinstance(bodyNode, ast.If):
+                super().visit(bodyNode)
+            elif isinstance(bodyNode, ast.Return):
+                super().visit(bodyNode)
+
+    #def visit_If(self, ifNode):
+        #ifCondition = ifNode.test
+        #ifBody = ifNode.body
+        #restOfIf = ifNode.orelse
+
+        #ifConditionStr = ast.unparse(ifCondition)
+        #print("ifCondition: ", ifConditionStr)
+
+    def visit_Return(self, returnNode):
+        returnValue = returnNode.value
+        returnValueStr = ast.unparse(returnValue)
+
+        # parse and transform return expression (if there is any) to Dice equivalent
+        translateReturn(returnValueStr)
+
 def dice(func):
     def wrapper():
         # get source code of function as a string, parse that string to get an AST with AST nodes
@@ -94,11 +114,6 @@ def dice(func):
 
         # get variables and their corresponding weights from the AST
         NodeVisitor().visit(tree)
-        print(totalDice)
-
-        # parse and transform return expression (if there is any) to Dice equivalent
-        returnStatement = functionSourceCode.split("return", 1)[1]
-        translateReturn(returnStatement)
         print(totalDice)
 
         # now have converted Dice code in one string - put it into a new Dice file "translated.dice"
