@@ -12,6 +12,9 @@ totalDice = ""
 global lastStatementInIf
 lastStatementInIf = False
 
+global numberOfIfs
+numberOfIfs = 0
+
 def translateBooleanExpression(textWhitespace):
     diceBooleanExp = ""
 
@@ -94,7 +97,7 @@ def isAssignRandomChoice(assignNode):
                         totalDice += "let " + var + " = flip " + str(weight) + " in "
 
                     # if lastStatementIf is true, need to finish "in" portion
-                    if lastStatementInIf:
+                    if lastStatementInIf and numberOfIfs > 0:
                         lastVar = vars[-1]
                         totalDice += lastVar + " "
                         lastStatementInIf = False
@@ -131,6 +134,35 @@ def isAssignBooleanOperation(assignNode):
         return True
     return False
 
+def isAssignConstant(assignNode):
+    global totalDice
+    global lastStatementInIf
+
+    vars = []
+
+    for target in assignNode.targets:
+        if isinstance(target, ast.Name):
+            if isinstance(target.ctx, ast.Store):
+                vars.append(target.id)
+
+    valueNode = assignNode.value
+    if isinstance(valueNode, ast.Constant):
+        constantStr = ast.unparse(valueNode)
+        diceConstantStr = translateBooleanExpression(constantStr) 
+
+        for var in vars:
+            totalDice += "let " + var + " = " + diceConstantStr + " in "
+
+        '''
+        if lastStatementInIf:
+            lastVar = vars[-1]
+            totalDice += lastVar + " "
+            lastStatementInIf = False
+        '''
+
+        return True
+    return False
+
 class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
     def visit_FunctionDef(self, functionDefNode):
@@ -145,10 +177,14 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
             return
         elif isAssignBooleanOperation(assignNode):
             return
+        elif isAssignConstant(assignNode):
+            return
 
     def visit_If(self, ifNode):
         global totalDice
         global lastStatementInIf
+        global numberOfIfs
+        numberOfIfs += 1
 
         ifCondition = ifNode.test
         ifBody = ifNode.body
@@ -164,10 +200,13 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
                 lastStatementInIf = True
             super().visit(node)
 
-        for node in restOfIf:
-            #print(node)
+        numberOfIfs -= 1
+        if (0 == numberOfIfs and 0 == len(restOfIf)):
             totalDice += "else "
-            super().visit(node)
+        else:
+            for node in restOfIf:
+                totalDice += "else "
+                super().visit(node)
 
     def visit_Return(self, returnNode):
         global totalDice
@@ -280,7 +319,7 @@ def evaluate():
         else:
             return c
     else:
-        a = True
+        a = random.choices([True, False], weights=[1, 9])
     return a
     '''
 
@@ -297,7 +336,7 @@ def evaluate():
         else:
             return c
     else:
-        a = True
+        a = random.choices([True, False], weights=[1, 9])
     return a
     '''
 
@@ -314,7 +353,7 @@ def evaluate():
         else:
             return c
     else:
-        a = True
+        a = random.choices([True, False], weights=[1, 9])
     return a
     
 
