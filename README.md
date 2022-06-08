@@ -1,7 +1,7 @@
 # dice-python
 dice-python is a program used to take Python code and output that equivalent code in Dice, a probabilistic programming language.
 
-To test the examples under the evaluate() function, comment in and out whichever example you currently want to test. Note that this program tests one example at a time.
+To test the examples under the evaluate() function in transform.py, comment in and out whichever example you currently want to test. Note that this program tests one example at a time.
 
 ## Linux Environment Setup
 Setup Docker:
