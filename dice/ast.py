@@ -7,9 +7,12 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
         self.totalDice = [[]]
         self.lastStatementInIf = False
         self.numberOfIfs = 0
+        self.allowMoreExpr = True
 
-    def append_dice(self, expr):
-        self.totalDice[-1].append(expr)
+    def append_dice(self, expr, alwaysAllow, allowMoreExpr):
+        if alwaysAllow or self.allowMoreExpr:
+            self.totalDice[-1].append(expr)
+            self.allowMoreExpr = allowMoreExpr
 
     def translate_boolean_expr(self, textWhitespace):
         diceBooleanExp = ""
@@ -95,11 +98,11 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
                         weight /= 10 # to convert to probability
 
                         for var in vars:
-                            self.append_dice("let " + var + " = flip " + str(weight) + " in ")
+                            self.append_dice("let " + var + " = flip " + str(weight) + " in ", False, True)
 
                         # if lastStatementIf is true, need to finish "in" portion
                         if self.lastStatementInIf and self.numberOfIfs > 0:
-                            self.append_dice(len(self.totalDice))
+                            self.append_dice(len(self.totalDice), False, False)
                             self.lastStatementInIf = False
 
             if isTrueOrFalseConstants:
@@ -122,10 +125,10 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
             booleanExprStr = self.translate_boolean_expr(booleanExpr)
             
             for var in vars:
-                self.append_dice("let " + var + " = " + booleanExprStr + " in ")
+                self.append_dice("let " + var + " = " + booleanExprStr + " in ", False, True)
 
             if self.lastStatementInIf:
-                self.append_dice(len(self.stackOfIns))
+                self.append_dice(len(self.totalDice), False, False)
                 self.lastStatementInIf = False
 
             return True
@@ -146,10 +149,10 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
             diceConstantStr = self.translate_boolean_expr(constantStr) 
 
             for var in vars:
-                self.append_dice("let " + var + " = " + diceConstantStr + " in ")
+                self.append_dice("let " + var + " = " + diceConstantStr + " in ", False, True)
 
             if self.lastStatementInIf:
-                self.append_dice(len(self.stackOfIns))
+                self.append_dice(len(self.totalDice), False, False)
                 self.lastStatementInIf = False
 
             return True
@@ -177,7 +180,7 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
         restOfIf = ifNode.orelse
 
         ifConditionStr = ast.unparse(ifCondition)
-        self.append_dice("if " + ifConditionStr + " then ")
+        self.append_dice("if " + ifConditionStr + " then ", False, True)
 
         ifBodyListLength = len(ifBody) - 1
         for node in ifBody:
@@ -187,12 +190,12 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
         self.numberOfIfs -= 1
         if (0 == self.numberOfIfs and 0 == len(restOfIf)):
-            self.append_dice("else ")
+            self.append_dice("else ", True, True)
         else:
+            self.append_dice("else ", True, True)
             for node in restOfIf:
-                self.append_dice("else ")
                 super().visit(node)
-                self.totalDice.append([])
+            self.totalDice.append([])
 
     def visit_Return(self, returnNode):
 
@@ -200,7 +203,7 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
         returnValueStr = ast.unparse(returnValue)
         diceResultExpr = self.translate_boolean_expr(returnValueStr)
 
-        self.append_dice(diceResultExpr + " ")
+        self.append_dice(diceResultExpr + " ", False, False)
 
     def get_program_recursive(self, idx):
         totalDiceLayer = [
