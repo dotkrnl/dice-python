@@ -12,6 +12,10 @@ Once you have selected an example that you want, use ```python3.9 transform.py``
 
 To run unit tests of all examples, use `python3.9 -m unittest discover tests`.
 
+## Known Issues
+
+Affected by a Dice bug (https://github.com/SHoltzen/dice/issues/60), the Docker build does not support `.observe()` currently.  To test the functionality, please follow the *Manual Installation* or use the web version of Dice to run the translated Dice file.
+
 ## Installation
 
 ### Docker Setup
