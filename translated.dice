@@ -1,1 +1,0 @@
-let a = flip 0.3 in let b = flip 0.6 in let c = flip 0.1 in let d = flip 0.8 in let e = flip 0.4 in (a || b || (!c)) && (b || c || d || (!e)) && (!b || !d || e) && (!a || !b) 
