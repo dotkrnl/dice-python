@@ -217,58 +217,64 @@ class NodeVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
         totalDice += diceResultExpr + " "
 
-def dice(func):
-    def wrapper():
-        # get source code of function as a string, parse that string to get an AST with AST nodes
-        functionSourceCode = inspect.getsource(func)
-        #print(functionSourceCode)
-        tree = ast.parse(functionSourceCode)
-        #print(ast.dump(tree, indent=4))
+def dice(timed=False):
+    def decorator(func):
+        def wrapper():
+            # get source code of function as a string, parse that string to get an AST with AST nodes
+            functionSourceCode = inspect.getsource(func)
+            #print(functionSourceCode)
+            tree = ast.parse(functionSourceCode)
+            #print(ast.dump(tree, indent=4))
 
-        # get variables and their corresponding weights from the AST
-        NodeVisitor().visit(tree)
-        #print(totalDice)
+            # get variables and their corresponding weights from the AST
+            NodeVisitor().visit(tree)
+            #print(totalDice)
 
-        # now have converted Dice code in one string - put it into a new Dice file "translated.dice"
-        with open("translated.dice", "w") as file:
-            file.write(totalDice)
-        
-        # now that we can have the translated Python code in translated.dice, we need to run translated.dice using the Dice executable and redirect its output back to Python
-        startTime = time.time()
-        resultExecuted = subprocess.run(["dice", "translated.dice"], capture_output=True)
-        endTime = time.time()
-        timeDifference = endTime - startTime
+            # now have converted Dice code in one string - put it into a new Dice file "translated.dice"
+            with open("translated.dice", "w") as file:
+                file.write(totalDice)
+            
+            # now that we can have the translated Python code in translated.dice, we need to run translated.dice using the Dice executable and redirect its output back to Python
+            startTime = time.time()
+            resultExecuted = subprocess.run(["dice", "translated.dice"], capture_output=True)
+            endTime = time.time()
+            timeDifference = endTime - startTime
 
 
-        diceErrorString = str(resultExecuted.stderr, "utf-8")
-        print(diceErrorString)
+            diceErrorString = str(resultExecuted.stderr, "utf-8")
+            print(diceErrorString)
 
-        diceResultString = str(resultExecuted.stdout, "utf-8")
-        # diceResultString is of the form:
-        # =============[Joint Distribution]===============
-        # Value     Probability
-        # true      0.5616
-        # false     0.4384
+            diceResultString = str(resultExecuted.stdout, "utf-8")
+            # diceResultString is of the form:
+            # =============[Joint Distribution]===============
+            # Value     Probability
+            # true      0.5616
+            # false     0.4384
 
-        # split stdout string to find true and false values
-        splitTrue = diceResultString.split("true", 1)[1]
-        splitFalse = splitTrue.split("false", 1)
-        trueVal = float(splitFalse[0])
-        falseVal = float(splitFalse[1])
+            # split stdout string to find true and false values
+            splitTrue = diceResultString.split("true", 1)[1]
+            splitFalse = splitTrue.split("false", 1)
+            trueVal = float(splitFalse[0])
+            falseVal = float(splitFalse[1])
 
-        # add mappings to the diceResult dictionary to return to the user
-        diceResult = {} # dictionary that contains the final evaluated output that was executed in Dice
-        diceResult[True] = trueVal
-        diceResult[False] = falseVal
-        diceResult["Time"] = timeDifference
-        return diceResult
+            # add mappings to the diceResult dictionary to return to the user
+            diceResult = {} # dictionary that contains the final evaluated output that was executed in Dice
+            diceResult[True] = trueVal
+            diceResult[False] = falseVal
 
-    return wrapper
+            if timed:
+                diceResult["Time"] = timeDifference
+
+            return diceResult
+
+        return wrapper
+
+    return decorator
 
 # note - the 2 comments below is just conceptually saying how decorators work
 # var = decorator(function)
 # evaluate = dice(evaluate)
-@dice
+@dice(timed=True)
 def evaluate():
      # example 1: testing random.choices assignments
     a = random.choices([True, False], weights=[3, 7])
