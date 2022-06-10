@@ -7,12 +7,13 @@ class DiceVisitor(ast.NodeVisitor):
     self.totalDice = [[]]
     self.lastStatementInIf = False
     self.numberOfIfs = 0
-    self.allowMoreExpr = True
+    self.pendingExpr = True
 
-  def append_dice(self, expr, alwaysAllow, allowMoreExpr):
-    if alwaysAllow or self.allowMoreExpr:
+  def append_dice(self, expr, notExpr, pendingExpr):
+    if ((not self.pendingExpr and notExpr) or
+            (self.pendingExpr and not notExpr)):
       self.totalDice[-1].append(expr)
-      self.allowMoreExpr = allowMoreExpr
+      self.pendingExpr = pendingExpr
 
   def translate_boolean_expr(self, textWhitespace):
     diceBooleanExp = ""
