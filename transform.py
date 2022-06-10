@@ -64,6 +64,13 @@ def isAssignRandomChoice(assignNode):
 
     # for the one value node, record that value so we can use it in our transformation to Dice code
     valueNode = assignNode.value
+
+    # FIXME: if not [0]
+    if isinstance(valueNode, ast.Subscript):
+        if isinstance(valueNode.slice, ast.Constant):
+            if valueNode.slice.value == 0:
+                valueNode = valueNode.value
+
     if isinstance(valueNode, ast.Call):
         funcNode = valueNode.func
         argsNode = valueNode.args
@@ -242,7 +249,8 @@ def dice(timed=False):
 
 
             diceErrorString = str(resultExecuted.stderr, "utf-8")
-            print(diceErrorString)
+            if diceErrorString:
+                print(diceErrorString)
 
             diceResultString = str(resultExecuted.stdout, "utf-8")
             # diceResultString is of the form:
@@ -271,26 +279,50 @@ def dice(timed=False):
 
     return decorator
 
+def sample(n, timed=False):
+    def decorator(func):
+        def wrapper():
+            sampleResult = {}
+
+            startTime = time.time()
+            for _ in range(n):
+                result = func()
+                sampleResult[result] = sampleResult.get(result, 0) + 1./n
+            endTime = time.time()
+            timeDifference = endTime - startTime
+            
+            if timed:
+                sampleResult["Time"] = timeDifference
+
+            return sampleResult
+
+        return wrapper
+
+    return decorator
+
 # note - the 2 comments below is just conceptually saying how decorators work
 # var = decorator(function)
 # evaluate = dice(evaluate)
+
+# To use sampling method
+# @sample(1000, timed=True)
 @dice(timed=True)
 def evaluate():
      # example 1: testing random.choices assignments
-    a = random.choices([True, False], weights=[3, 7])
-    b = random.choices([True, False], weights=[6, 4])
-    c = random.choices([True, False], weights=[1, 9])
-    d = random.choices([True, False], weights=[8, 2])
-    e = random.choices([True, False], weights=[4, 6])
+    a = random.choices([True, False], weights=[3, 7])[0]
+    b = random.choices([True, False], weights=[6, 4])[0]
+    c = random.choices([True, False], weights=[1, 9])[0]
+    d = random.choices([True, False], weights=[8, 2])[0]
+    e = random.choices([True, False], weights=[4, 6])[0]
     return ((a or b or not c) and (b or c or d or not e) and (not b or not d or e) and (not a or not b))
     
 
     ''' # example 2: testing basic if/else functionality
-    b = random.choices([True, False], weights=[3, 7])
+    b = random.choices([True, False], weights=[3, 7])[0]
     if b:
-        a = random.choices([True, False], weights=[3, 7])
+        a = random.choices([True, False], weights=[3, 7])[0]
     else:
-        a = random.choices([True, False], weights=[2, 8])
+        a = random.choices([True, False], weights=[2, 8])[0]
     result = b or a
     if result:
         return b
@@ -298,14 +330,14 @@ def evaluate():
     '''
 
     ''' # example 3: testing basic if/elif/else functionality
-    a = random.choices([True, False], weights=[4, 6])
-    b = random.choices([True, False], weights=[3, 7])
+    a = random.choices([True, False], weights=[4, 6])[0]
+    b = random.choices([True, False], weights=[3, 7])[0]
     if a:
-        c = random.choices([True, False], weights=[2, 8])
+        c = random.choices([True, False], weights=[2, 8])[0]
     elif b:
-        c = random.choices([True, False], weights=[1, 9])
+        c = random.choices([True, False], weights=[1, 9])[0]
     else:
-        c = random.choices([True, False], weights=[3, 7])
+        c = random.choices([True, False], weights=[3, 7])[0]
     result = a and b and c
     if result:
         return c
@@ -313,9 +345,9 @@ def evaluate():
     '''
 
     ''' # example 4: testing nested if's
-    a = random.choices([True, False], weights=[2, 8])
-    b = random.choices([True, False], weights=[5, 5])
-    c = random.choices([True, False], weights=[7, 3])
+    a = random.choices([True, False], weights=[2, 8])[0]
+    b = random.choices([True, False], weights=[5, 5])[0]
+    c = random.choices([True, False], weights=[7, 3])[0]
     if a:
         if b:
             if c:
@@ -325,14 +357,14 @@ def evaluate():
         else:
             return c
     else:
-        a = random.choices([True, False], weights=[1, 9])
+        a = random.choices([True, False], weights=[1, 9])[0]
     return a
     '''
 
     ''' # example 5: testing different ordering of example 4
-    a = random.choices([True, False], weights=[2, 8])
-    b = random.choices([True, False], weights=[5, 5])
-    c = random.choices([True, False], weights=[7, 3])
+    a = random.choices([True, False], weights=[2, 8])[0]
+    b = random.choices([True, False], weights=[5, 5])[0]
+    c = random.choices([True, False], weights=[7, 3])[0]
     if b:
         if c:
             if a:
@@ -342,14 +374,14 @@ def evaluate():
         else:
             return c
     else:
-        a = random.choices([True, False], weights=[1, 9])
+        a = random.choices([True, False], weights=[1, 9])[0]
     return a
     '''
 
     ''' # example 6: testing different ordering of example 5
-    a = random.choices([True, False], weights=[2, 8])
-    b = random.choices([True, False], weights=[5, 5])
-    c = random.choices([True, False], weights=[7, 3])
+    a = random.choices([True, False], weights=[2, 8])[0]
+    b = random.choices([True, False], weights=[5, 5])[0]
+    c = random.choices([True, False], weights=[7, 3])[0]
     if c:
         if b:
             if a:
@@ -359,7 +391,7 @@ def evaluate():
         else:
             return c
     else:
-        a = random.choices([True, False], weights=[1, 9])
+        a = random.choices([True, False], weights=[1, 9])[0]
     return a
     '''
     
