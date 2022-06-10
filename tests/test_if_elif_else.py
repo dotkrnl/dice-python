@@ -21,13 +21,13 @@ class TestIfElifElse(unittest.TestCase):
 
     def test_single_dice(self):
         result = dice()(evaluate)()
-        self.assertAlmostEqual(result[True], 0.025)
-        self.assertAlmostEqual(result[False], 0.975)
+        self.assertAlmostEqual(result[True], 0.024)
+        self.assertAlmostEqual(result[False], 0.976)
 
     def test_single_sample(self):
         result = sample(100000)(evaluate)()
-        self.assertAlmostEqual(result[True], 0.025, 1)
-        self.assertAlmostEqual(result[False], 0.975, 1)
+        self.assertAlmostEqual(result[True], 0.024, 1)
+        self.assertAlmostEqual(result[False], 0.976, 1)
 
 if __name__ == '__main__':
     unittest.main()

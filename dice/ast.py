@@ -1,12 +1,17 @@
-import ast # python's abstract syntax tree library - used to parse function source code to retrieve AST nodes, etc
+import ast
+from multiprocessing.spawn import get_preparation_data # python's abstract syntax tree library - used to parse function source code to retrieve AST nodes, etc
 
 class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
-    totalDice = ""
-    lastStatementInIf = False
-    numberOfIfs = 0
+    def __init__(self):
+        self.totalDice = [[]]
+        self.lastStatementInIf = False
+        self.numberOfIfs = 0
 
-    def translateBooleanExpression(self, textWhitespace):
+    def append_dice(self, expr):
+        self.totalDice[-1].append(expr)
+
+    def translate_boolean_expr(self, textWhitespace):
         diceBooleanExp = ""
 
         # split by whitespace: "or" and "and" Python operators are always separated by whitespace
@@ -40,7 +45,7 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
         return diceBooleanExp
                     
-    def isAssignRandomChoice(self, assignNode):
+    def is_assign_random_choice(self, assignNode):
 
         vars = [] # holds variables that we need to define in Dice
 
@@ -90,19 +95,18 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
                         weight /= 10 # to convert to probability
 
                         for var in vars:
-                            self.totalDice += "let " + var + " = flip " + str(weight) + " in "
+                            self.append_dice("let " + var + " = flip " + str(weight) + " in ")
 
                         # if lastStatementIf is true, need to finish "in" portion
                         if self.lastStatementInIf and self.numberOfIfs > 0:
-                            lastVar = vars[-1]
-                            self.totalDice += lastVar + " "
+                            self.append_dice(len(self.totalDice))
                             self.lastStatementInIf = False
 
             if isTrueOrFalseConstants:
                 return True
             return False
 
-    def isAssignBooleanOperation(self, assignNode):
+    def is_assign_boolean_operation(self, assignNode):
 
         vars = []
 
@@ -115,20 +119,19 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
         if isinstance(valueNode, ast.BoolOp):
             # don't need "<var =" part of assignment, just need the boolean expression
             booleanExpr = ast.unparse(assignNode).split(vars[-1] + " = ")[1]
-            booleanExprStr = self.translateBooleanExpression(booleanExpr)
+            booleanExprStr = self.translate_boolean_expr(booleanExpr)
             
             for var in vars:
-                self.totalDice += "let " + var + " = " + booleanExprStr + " in "
+                self.append_dice("let " + var + " = " + booleanExprStr + " in ")
 
             if self.lastStatementInIf:
-                lastVar = vars[-1]
-                self.totalDice += lastVar + " "
+                self.append_dice(len(self.stackOfIns))
                 self.lastStatementInIf = False
 
             return True
         return False
 
-    def isAssignConstant(self, assignNode):
+    def is_assign_constant(self, assignNode):
 
         vars = []
 
@@ -140,17 +143,14 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
         valueNode = assignNode.value
         if isinstance(valueNode, ast.Constant):
             constantStr = ast.unparse(valueNode)
-            diceConstantStr = self.translateBooleanExpression(constantStr) 
+            diceConstantStr = self.translate_boolean_expr(constantStr) 
 
             for var in vars:
-                self.totalDice += "let " + var + " = " + diceConstantStr + " in "
+                self.append_dice("let " + var + " = " + diceConstantStr + " in ")
 
-            '''
             if self.lastStatementInIf:
-                lastVar = vars[-1]
-                self.totalDice += lastVar + " "
+                self.append_dice(len(self.stackOfIns))
                 self.lastStatementInIf = False
-            '''
 
             return True
         return False
@@ -161,11 +161,11 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
     def visit_Assign(self, assignNode):
 
-        if self.isAssignRandomChoice(assignNode):
+        if self.is_assign_random_choice(assignNode):
             return
-        elif self.isAssignBooleanOperation(assignNode):
+        elif self.is_assign_boolean_operation(assignNode):
             return
-        elif self.isAssignConstant(assignNode):
+        elif self.is_assign_constant(assignNode):
             return
 
     def visit_If(self, ifNode):
@@ -177,8 +177,7 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
         restOfIf = ifNode.orelse
 
         ifConditionStr = ast.unparse(ifCondition)
-        self.totalDice += "if " + ifConditionStr + " then "
-        #print("ifCondition: ", ifConditionStr)
+        self.append_dice("if " + ifConditionStr + " then ")
 
         ifBodyListLength = len(ifBody) - 1
         for node in ifBody:
@@ -188,19 +187,29 @@ class DiceVisitor(ast.NodeVisitor): # child class of ast.NodeVisitor
 
         self.numberOfIfs -= 1
         if (0 == self.numberOfIfs and 0 == len(restOfIf)):
-            self.totalDice += "else "
+            self.append_dice("else ")
         else:
             for node in restOfIf:
-                self.totalDice += "else "
+                self.append_dice("else ")
                 super().visit(node)
+                self.totalDice.append([])
 
     def visit_Return(self, returnNode):
 
         returnValue = returnNode.value
         returnValueStr = ast.unparse(returnValue)
-        diceResultExpr = self.translateBooleanExpression(returnValueStr)
+        diceResultExpr = self.translate_boolean_expr(returnValueStr)
 
-        self.totalDice += diceResultExpr + " "
+        self.append_dice(diceResultExpr + " ")
+
+    def get_program_recursive(self, idx):
+        totalDiceLayer = [
+            item if type(item) is str
+            else self.get_program_recursive(item)
+            for item in self.totalDice[idx]]
+        if idx < len(self.totalDice) - 1:
+            totalDiceLayer.append(self.get_program_recursive(idx+1))
+        return ''.join(totalDiceLayer)
 
     def get_program(self):
-        return self.totalDice
+        return self.get_program_recursive(0)
