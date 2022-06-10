@@ -20,10 +20,11 @@ RUN /bin/bash -c "cd /dice && eval '$(opam env)' && source $HOME/.cargo/env && d
 # Install Dice
 RUN /bin/bash -c "cd /dice && eval '$(opam env)' && dune install"
 
-# Clone dice-python
-RUN git clone https://github.com/dotkrnl/dice-python.git /dice-python
-
 # Install Vim for user's convience
 RUN sudo apt-get install vim -y
+
+# Clone dice-python
+RUN VERSION=0709-b0
+RUN git clone https://github.com/dotkrnl/dice-python.git /dice-python
 
 CMD python3.9 /dice-python/transform.py
