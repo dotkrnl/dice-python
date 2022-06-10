@@ -8,6 +8,8 @@ class DiceVisitor(ast.NodeVisitor):
     self.lastStatementInIf = False
     self.numberOfIfs = 0
     self.pendingExpr = True
+    self.observed = {}
+    self.definedVars = []
 
   def append_dice(self, expr, notExpr, pendingExpr):
     if ((not self.pendingExpr and notExpr) or
@@ -114,6 +116,7 @@ class DiceVisitor(ast.NodeVisitor):
               self.append_dice(
                   "let " + var + " = flip " + str(weight) + " in ",
                   False, True)
+              self.definedVars.append(var)
 
             # if lastStatementIf is true, need to finish "in" portion
             if self.lastStatementInIf and self.numberOfIfs > 0:
@@ -142,6 +145,7 @@ class DiceVisitor(ast.NodeVisitor):
       for var in vars:
         self.append_dice(
             "let " + var + " = " + booleanExprStr + " in ", False, True)
+        self.definedVars.append(var)
 
       if self.lastStatementInIf:
         self.append_dice(len(self.totalDice), False, False)
@@ -167,6 +171,7 @@ class DiceVisitor(ast.NodeVisitor):
       for var in vars:
         self.append_dice(
             "let " + var + " = " + diceConstantStr + " in ", False, True)
+        self.definedVars.append(var)
 
       if self.lastStatementInIf:
         self.append_dice(len(self.totalDice), False, False)
@@ -196,7 +201,7 @@ class DiceVisitor(ast.NodeVisitor):
     ifBody = ifNode.body
     restOfIf = ifNode.orelse
 
-    ifConditionStr = ast.unparse(ifCondition)
+    ifConditionStr = self.translate_boolean_expr(ast.unparse(ifCondition))
     self.append_dice("if " + ifConditionStr + " then ", False, True)
 
     ifBodyListLength = len(ifBody) - 1
@@ -220,6 +225,18 @@ class DiceVisitor(ast.NodeVisitor):
     returnValueStr = ast.unparse(returnValue)
     diceResultExpr = self.translate_boolean_expr(returnValueStr)
 
+    for var, val in self.observed.items():
+      if var in self.definedVars:
+        if val == True:
+          self.append_dice(
+              "let _ = observe " + var + " in ", False, True)
+        elif val == False:
+          self.append_dice(
+              "let _ = observe !" + var + " in ", False, True)
+        else:
+          self.append_dice(
+              "let _ = observe (" + var + " == " + val + ") in ", False, True)
+
     self.append_dice(diceResultExpr + " ", False, False)
 
   def get_program_recursive(self, idx):
@@ -233,3 +250,6 @@ class DiceVisitor(ast.NodeVisitor):
 
   def get_program(self):
     return self.get_program_recursive(0)
+
+  def observe(self, var, val):
+    self.observed[var] = val
