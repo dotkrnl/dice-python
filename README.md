@@ -10,6 +10,8 @@ To test the examples under the `evaluate()` function in `transform.py`, comment 
 
 Once you have selected an example that you want, use ```python3.9 transform.py``` to run `transform.py`. The `translated.dice` file should then be populated with the translated Dice code. The output from `transform.py` should then be a dictionary of the form ```{True: <value>, False: <value>, 'Time': <value>}```.
 
+To run unit tests of all examples, use `python3.9 -m unittest discover tests`.
+
 ## Installation
 
 ### Docker Setup
