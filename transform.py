@@ -1,20 +1,21 @@
 from dice import dice, sample
 import random
 
+
 # To use sampling method
-# @sample(1000, timed=True)
+#@sample(1000, timed=True)
 @dice(timed=True)
 def evaluate():
-     # example 1: testing random.choices assignments
-    a = random.choices([True, False], weights=[3, 7])[0]
-    b = random.choices([True, False], weights=[6, 4])[0]
-    c = random.choices([True, False], weights=[1, 9])[0]
-    d = random.choices([True, False], weights=[8, 2])[0]
-    e = random.choices([True, False], weights=[4, 6])[0]
-    return ((a or b or not c) and (b or c or d or not e) and (not b or not d or e) and (not a or not b))
-    
+  # example 1: testing random.choices assignments
+  a = random.choices([True, False], weights=[3, 7])[0]
+  b = random.choices([True, False], weights=[6, 4])[0]
+  c = random.choices([True, False], weights=[1, 9])[0]
+  d = random.choices([True, False], weights=[8, 2])[0]
+  e = random.choices([True, False], weights=[4, 6])[0]
+  return ((a or b or not c) and (b or c or d or not e) and
+          (not b or not d or e) and (not a or not b))
 
-    ''' # example 2: testing basic if/else functionality
+  ''' # example 2: testing basic if/else functionality
     b = random.choices([True, False], weights=[3, 7])[0]
     if b:
         a = random.choices([True, False], weights=[3, 7])[0]
@@ -26,7 +27,7 @@ def evaluate():
     return result
     '''
 
-    ''' # example 3: testing basic if/elif/else functionality
+  ''' # example 3: testing basic if/elif/else functionality
     a = random.choices([True, False], weights=[4, 6])[0]
     b = random.choices([True, False], weights=[3, 7])[0]
     if a:
@@ -41,7 +42,7 @@ def evaluate():
     return result
     '''
 
-    ''' # example 4: testing nested if's
+  ''' # example 4: testing nested if's
     a = random.choices([True, False], weights=[2, 8])[0]
     b = random.choices([True, False], weights=[5, 5])[0]
     c = random.choices([True, False], weights=[7, 3])[0]
@@ -58,7 +59,7 @@ def evaluate():
     return a
     '''
 
-    ''' # example 5: testing different ordering of example 4
+  ''' # example 5: testing different ordering of example 4
     a = random.choices([True, False], weights=[2, 8])[0]
     b = random.choices([True, False], weights=[5, 5])[0]
     c = random.choices([True, False], weights=[7, 3])[0]
@@ -74,8 +75,8 @@ def evaluate():
         a = random.choices([True, False], weights=[1, 9])[0]
     return a
     '''
-
-    ''' # example 6: testing different ordering of example 5
+    
+  ''' # example 6: testing different ordering of example 5
     a = random.choices([True, False], weights=[2, 8])[0]
     b = random.choices([True, False], weights=[5, 5])[0]
     c = random.choices([True, False], weights=[7, 3])[0]
@@ -91,11 +92,12 @@ def evaluate():
         a = random.choices([True, False], weights=[1, 9])[0]
     return a
     '''
-    
+
 
 def main():
-    result = evaluate()
-    print(result)
+  result = evaluate()
+  print(result)
+
 
 if __name__ == "__main__":
-    main()
+  main()
